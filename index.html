@@ -1,23 +1,31 @@
 <!DOCTYPE html>
 <html>
 <head></head>
+
 <body>
-  <canvas width="500" height="500" style="border: 1px solid #000000;">
-  </canvas>
-  
-  <button onclick="startSim()">Start</button>
-  <button onclick="stopSim()">Stop</button>
-  <button onclick="changeOrbit()">Change Orbit</button>
-  
-  <script>
-  function startSim() {
-    running = setInterval(function() {
-      cx.clearRect(0,0, 500, 500);
+	<canvas width="500" height="500" style="border: 1px solid #000000;">
+	</canvas>
+
+	<button onclick="startSim()">Start</button>
+	<button onclick="stopSim()">Stop</button>
+	<div>
+		<p>Add Thrust</p>
+		<button onmousedown="changeOrbit(-1)" onmouseup="changeOrbit(0)" >
+		 - </button>
+		<button onmousedown="changeOrbit(1)" onmouseup="changeOrbit(0)">
+		 + </button>
+	</div>
+
+	<script>
+
+	function startSim() {
+		running = setInterval(function() {
+			cx.clearRect(0,0, 500, 500);
 			draw(earth, "blue");
-			if(changing){
+			if(changing!=0){
 				draw(moon, "red");
 			} else {
-			 draw(moon, "purple");
+				draw(moon, "purple");
 			};
 			moon.update(earth, dT);
 		}, 50);
@@ -27,8 +35,8 @@
 		clearInterval(running);
 	};
 
-	function changeOrbit() {
-		changing = true;
+	function changeOrbit(dir) {
+		changing = dir;
 	};
 
 	function Vector(x, y){
@@ -64,14 +72,14 @@
 		this.canvasCoords = new Vector(x, y);
 		this.position = new Vector(0, 0);
 		this.radius = 15;
-		this.GM = 30;
+		this.GM = 1000;
 	};
 
 	function Satellite(center, distance){
 		this.canvasCoords = center.canvasCoords.plus(new Vector(distance, 0));
 		this.position = new Vector(distance, 0);
 		this.radius = 5;
-		this.velocity = new Vector(0, 1);
+		this.velocity = new Vector(0, 2);
 		this.acceleration = new Vector(0,0);
 	};
 
@@ -79,9 +87,8 @@
 	Satellite.prototype.getAccel = function(planet) {
 		var aMag = planet.GM/(this.position.norm*this.position.norm);
 		this.acceleration = this.position.times(-1*aMag/this.position.norm);
-		if(changing){
-			this.acceleration = this.acceleration.plus(this.velocity.unit.times(this.acceleration.norm));
-			changing = false;
+		if(changing != 0){
+			this.acceleration = this.acceleration.plus(this.velocity.unit.times(this.acceleration.norm*changing));
 		};
 	};
 
@@ -101,10 +108,10 @@
 	};
 
 	var running = 0;
-	var changing = false;
+	var changing = 0;
 	var cx = document.querySelector("canvas").getContext("2d");
 	var earth = new Planet(250, 250);
-	var moon = new Satellite(earth, 30);
+	var moon = new Satellite(earth, 100);
 	var dT = 1;
 
 	</script>	
