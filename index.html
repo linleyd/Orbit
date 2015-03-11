@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head></head>
+<body>
+  <canvas width="500" height="500" style="border: 1px solid #000000;">
+  </canvas>
+  
+  <button onclick="startSim()">Start</button>
+  <button onclick="stopSim()">Stop</button>
+  <button onclick="changeOrbit()">Change Orbit</button>
+  
+  <script>
+  function startSim() {
+    running = setInterval(function() {
+      cx.clearRect(0,0, 500, 500);
+			draw(earth, "blue");
+			if(changing){
+				draw(moon, "red");
+			} else {
+			 draw(moon, "purple");
+			};
+			moon.update(earth, dT);
+		}, 50);
+	};
+
+	function stopSim() {
+		clearInterval(running);
+	};
+
+	function changeOrbit() {
+		changing = true;
+	};
+
+	function Vector(x, y){
+		this.x = x;
+		this.y = y;
+	};
+
+	Vector.prototype.plus = function(other){
+		return new Vector(this.x+other.x, this.y+other.y);
+	};
+	
+	Vector.prototype.times = function(factor){
+		return new Vector(this.x*factor, this.y*factor);
+	};
+
+	Object.defineProperty(Vector.prototype, "norm", {
+		get: function() {return Math.sqrt(this.x*this.x+this.y*this.y);}
+	});
+
+	Object.defineProperty(Vector.prototype, "unit", {
+		get: function() {return this.times(1/this.norm);}
+	});
+
+
+	function draw(sat, color){
+		cx.beginPath();
+		cx.fillStyle = color;
+		cx.arc(sat.canvasCoords.x, sat.canvasCoords.y, sat.radius, 0, 7);
+		cx.fill();
+	};
+
+	function Planet(x, y){
+		this.canvasCoords = new Vector(x, y);
+		this.position = new Vector(0, 0);
+		this.radius = 15;
+		this.GM = 30;
+	};
+
+	function Satellite(center, distance){
+		this.canvasCoords = center.canvasCoords.plus(new Vector(distance, 0));
+		this.position = new Vector(distance, 0);
+		this.radius = 5;
+		this.velocity = new Vector(0, 1);
+		this.acceleration = new Vector(0,0);
+	};
+
+
+	Satellite.prototype.getAccel = function(planet) {
+		var aMag = planet.GM/(this.position.norm*this.position.norm);
+		this.acceleration = this.position.times(-1*aMag/this.position.norm);
+		if(changing){
+			this.acceleration = this.acceleration.plus(this.velocity.unit.times(this.acceleration.norm));
+			changing = false;
+		};
+	};
+
+	Satellite.prototype.getVel = function(dT){
+		this.velocity = this.velocity.plus(this.acceleration.times(dT));
+	};
+
+	Satellite.prototype.getPos = function(dT){
+		this.position = this.position.plus(this.velocity.times(dT));
+	};
+
+	Satellite.prototype.update = function(planet, dT) {
+		this.getAccel(planet);
+		this.getVel(dT);
+		this.getPos(dT);
+		this.canvasCoords = planet.canvasCoords.plus(this.position);
+	};
+
+	var running = 0;
+	var changing = false;
+	var cx = document.querySelector("canvas").getContext("2d");
+	var earth = new Planet(250, 250);
+	var moon = new Satellite(earth, 30);
+	var dT = 1;
+
+	</script>	
+
+</body>
+
